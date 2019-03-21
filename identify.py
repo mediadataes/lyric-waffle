@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
+import re
+import sys
 
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from config import YOUTUBE_APIKEY, YOUTUBE, MUSICLIST
-
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-
 from requests_html import HTMLSession
+
+from config import YOUTUBE_APIKEY, YOUTUBE, MUSICLIST
 
 @dataclass
 class Song:
@@ -32,6 +33,13 @@ class Song:
 class Provider:
     def download(self):
         raise NotImplementedError
+
+
+RE_ARTIST = '([\w\. ]+)([,&/]\s)?'
+RE_ARTISTS = f"(?P<artists>({RE_ARTIST})+)"
+RE_TITLE = r"(?P<title>[\w:'_\s]+)"
+RE1 = re.compile(f"{RE_ARTISTS}\s*[-|]\s*{RE_TITLE}", flags=re.UNICODE)
+RE2 = re.compile(f"{RE_TITLE}\s*[-|]\s*{RE_ARTISTS}", flags=re.UNICODE)
 
 
 class YoutubeProvider(Provider):
@@ -56,17 +64,18 @@ class YoutubeProvider(Provider):
                 info = item['snippet']
                 title = info['title']
 
-                # TODO: normalize artists and title
-
-                try:
-                    # TODO: manage '|' as split, maybe a regex
-                    split = title.index('-')
-                except:
+                match = RE1.match(title)
+                if not match:
+                    match = RE2.match(title)
+                if not match:
                     print("Error, invalid title format:", title)
                     continue
 
-                artists = list(map(str.strip, title[:split].strip().split(',')))
-                title = title[split+1:].strip()
+                artists = match.group('artists')
+                title = match.group('title')
+
+                artists = [a.strip() for a, _ in re.findall(RE_ARTIST, artists, flags=re.UNICODE)]
+                title = title.strip()
 
                 s = Song(artists=artists, title=title, created=datetime.now())
                 songs.append(s)
@@ -92,7 +101,7 @@ class MusicListProvider(Provider):
         for li in ul.find('li'):
             title = li.find('.chart-content h4', first=True).text
             artists = li.find('.chart-content p', first=True).text
-            artists= map(str.strip, artists.split(','))
+            artists = [a.strip() for a, _ in re.findall(RE_ARTIST, artists, flags=re.UNICODE)]
             s = Song(artists=artists, title=title, created=datetime.now())
             songs.append(s)
 
