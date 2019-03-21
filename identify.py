@@ -10,6 +10,8 @@ from config import YOUTUBE_APIKEY, YOUTUBE, MUSICLIST
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+from requests_html import HTMLSession
+
 @dataclass
 class Song:
     artists: [str]
@@ -18,16 +20,18 @@ class Song:
     length: Optional[int] = None
     created: Optional[datetime] = None
 
+    def to_csv(self):
+        title = self.title
+        created = self.created or ""
+        length = self.length or ""
+        gender = self.gender or ""
+        artists = ', '.join(self.artists)
+        return f'"{title}";"{artists}";"{created}";"{length}";"{gender}"\n'
+
 
 class Provider:
     def download(self):
         raise NotImplementedError
-
-    def save(self, dest):
-        songs = self.download()
-        with open(dest, 'a') as f:
-            for s in songs:
-                f.write(f'"{s.title}";"{s.artists}";"{s.created}";"{s.length}";"{s.gender}"\n')
 
 
 class YoutubeProvider(Provider):
@@ -55,7 +59,7 @@ class YoutubeProvider(Provider):
                 # TODO: normalize artists and title
 
                 try:
-                    # TODO: manage '|' as split
+                    # TODO: manage '|' as split, maybe a regex
                     split = title.index('-')
                 except:
                     print("Error, invalid title format:", title)
@@ -80,7 +84,19 @@ class MusicListProvider(Provider):
         self.list_ = list_
 
     def download(self):
-        return []
+        songs = []
+
+        session = HTMLSession()
+        r = session.get(f'https://www.musiclist.es/{self.list_}')
+        ul = r.html.find('ul.chart', first=True)
+        for li in ul.find('li'):
+            title = li.find('.chart-content h4', first=True).text
+            artists = li.find('.chart-content p', first=True).text
+            artists= map(str.strip, artists.split(','))
+            s = Song(artists=artists, title=title, created=datetime.now())
+            songs.append(s)
+
+        return songs
 
 
 class Identify:
@@ -95,8 +111,18 @@ class Identify:
             self.providers.append(MusicListProvider(m))
 
     def run(self):
+        songs = []
         for p in self.providers:
-            p.download()
+            songs += p.download()
+
+        with open('songs.csv', 'w') as f:
+            written = {}
+            for s in songs:
+                if s.title in written:
+                    continue
+
+                written[s.title] = s
+                f.write(s.to_csv())
 
 
 if __name__ == '__main__':

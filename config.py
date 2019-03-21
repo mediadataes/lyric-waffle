@@ -9,5 +9,6 @@ YOUTUBE = [
 
 MUSICLIST = [
     '40-principales',
+    'europa-fm',
 ]
 
