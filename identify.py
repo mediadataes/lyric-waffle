@@ -124,7 +124,7 @@ class Identify:
         for p in self.providers:
             songs += p.download()
 
-        with open('songs.csv', 'w') as f:
+        with open('output/songs.csv', 'w') as f:
             written = {}
             for s in songs:
                 if s.title in written:
