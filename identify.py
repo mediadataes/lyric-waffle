@@ -29,6 +29,19 @@ class Song:
         artists = ', '.join(self.artists)
         return f'"{title}";"{artists}";"{created}";"{length}";"{gender}"\n'
 
+    @classmethod
+    def from_csv(cls, row):
+        title, artists, created, length, gender = row
+        artists = artists.split(', ')
+        created = datetime.fromisoformat(created)
+
+        s = Song(title=title,
+                 artists=artists,
+                 gender=gender,
+                 length=length,
+                 created=created)
+        return s
+
 
 class Provider:
     def download(self):
