@@ -11,11 +11,12 @@ from functools import partial
 from multiprocessing import Pool
 
 from identify import Song
-from lyricsmaster.providers import Genius, LyricWiki
+from lyricsmaster.providers import Genius, AzLyrics, LyricWiki
 from cachier import cachier
 
 
 TAG = re.compile(r'^\[[\w -_:]+\]$')
+PROVIDERS = ['genius']
 # number of simultaneous processes
 NP = 10
 
@@ -52,12 +53,14 @@ def get_albums(artist, provider='genius'):
         provider = Genius()
     elif provider == 'wiki':
         provider = LyricWiki()
+    elif provider == 'az':
+        provider = AzLyrics()
     disc = provider.get_lyrics(artist=artist)
     return disc
 
 
-def get_lyrics(output, song, provider='genius'):
-    print(f'get lyrics: {song.title}')
+def get_lyrics(output, song, provider=PROVIDERS[0]):
+    print(f'{provider}: get lyrics: {song.title}')
     title = song.title.lower()
 
     discs = []
@@ -79,14 +82,19 @@ def get_lyrics(output, song, provider='genius'):
                     return
 
     # fallback to other provider
-    if provider == 'genius':
-        get_lyrics(output, song, provider='wiki')
-        return
+    if provider == PROVIDERS[0]:
+        index = PROVIDERS.index(provider)
+        if len(PROVIDERS) <= index + 1:
+            return song
+        fallback = PROVIDERS[index+1]
+        print(f'Fallback {fallback}')
+        return get_lyrics(output, song, provider=fallback)
 
-    # TODO: log out this output to a file?
     artists = ', '.join(song.artists)
     print(f'Cannot find the song: "{song.title}" from {artists}',
           file=sys.stderr)
+
+    return song
 
 
 class Lyrics:
@@ -104,7 +112,23 @@ class Lyrics:
                 songs.append(song)
 
         with Pool(NP) as p:
-            p.map(partial(get_lyrics, self.output), songs)
+            errors = p.map(partial(get_lyrics, self.output), songs)
+            errors = filter(None, errors)
+
+        filename = os.path.join(self.output, 'lyrics-errors.txt')
+        os.makedirs(self.output, exist_ok=True)
+        with open(filename, 'w') as f:
+            written = set()
+            for s in errors:
+                if s.title in written:
+                    continue
+
+                written.add(s.title)
+                f.write(s.to_csv())
+
+        if errors:
+            print()
+            print(f'Take a look to the errors file {filename}')
 
 
 if __name__ == '__main__':
