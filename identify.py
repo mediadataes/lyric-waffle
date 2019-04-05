@@ -163,7 +163,7 @@ class Identify:
                 written[s.title] = s
                 f.write(s.to_csv())
 
-        filename = os.path.join(output_dir, 'errors.csv')
+        filename = os.path.join(output_dir, 'identify-errors.txt')
         os.makedirs(output_dir, exist_ok=True)
         with open(filename, 'w') as f:
             written = set()
@@ -180,6 +180,5 @@ class Identify:
 
 
 if __name__ == '__main__':
-    # TODO: parse arguments
     identify = Identify()
     identify.run()
