@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import re
 import sys
 
@@ -69,6 +70,7 @@ class YoutubeProvider(Provider):
 
     def download(self):
         songs = []
+        errors = []
         plist = self.youtube.playlistItems()
         req = plist.list(playlistId=self.playlist, part=self.PART)
         response = req.execute()
@@ -82,6 +84,7 @@ class YoutubeProvider(Provider):
                     match = RE2.match(title)
                 if not match:
                     print("Error, invalid title format:", title)
+                    errors.append(title)
                     continue
 
                 artists = match.group('artists')
@@ -97,7 +100,7 @@ class YoutubeProvider(Provider):
                 break
             response = req.execute()
 
-        return songs
+        return songs, errors
 
 
 class MusicListProvider(Provider):
@@ -118,7 +121,7 @@ class MusicListProvider(Provider):
             s = Song(artists=artists, title=title, created=datetime.now())
             songs.append(s)
 
-        return songs
+        return songs, []
 
 
 class Identify:
@@ -134,10 +137,16 @@ class Identify:
 
     def run(self):
         songs = []
+        errors = []
         for p in self.providers:
-            songs += p.download()
+            p_songs, p_errors = p.download()
+            songs += p_songs
+            errors += p_errors
 
-        with open('output/songs.csv', 'w') as f:
+        output_dir = 'output'
+        filename = os.path.join(output_dir, 'songs.csv')
+        os.makedirs(output_dir, exist_ok=True)
+        with open(filename, 'w') as f:
             written = {}
             for s in songs:
                 if s.title in written:
@@ -145,6 +154,21 @@ class Identify:
 
                 written[s.title] = s
                 f.write(s.to_csv())
+
+        filename = os.path.join(output_dir, 'errors.csv')
+        os.makedirs(output_dir, exist_ok=True)
+        with open(filename, 'w') as f:
+            written = set()
+            for s in errors:
+                if s in written:
+                    continue
+
+                written.add(s)
+                f.write(f'{s}\n')
+
+        if errors:
+            print()
+            print(f'Take a look to the errors file {filename}')
 
 
 if __name__ == '__main__':
