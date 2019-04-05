@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import emoji
 import os
 import re
 import sys
@@ -13,6 +14,7 @@ from googleapiclient.errors import HttpError
 from requests_html import HTMLSession
 
 from config import YOUTUBE_APIKEY, YOUTUBE, MUSICLIST
+
 
 @dataclass
 class Song:
@@ -54,6 +56,12 @@ RE_ARTISTS = f"(?P<artists>({RE_ARTIST})+)"
 RE_TITLE = r"(?P<title>[\w:'_\s]+)"
 RE1 = re.compile(f"{RE_ARTISTS}\s*[-|]\s*{RE_TITLE}", flags=re.UNICODE)
 RE2 = re.compile(f"{RE_TITLE}\s*[-|]\s*{RE_ARTISTS}", flags=re.UNICODE)
+EMOJI = emoji.get_emoji_regexp()
+
+
+def normalize_title(title):
+    out = EMOJI.sub(r'', title)
+    return out
 
 
 class YoutubeProvider(Provider):
@@ -77,7 +85,7 @@ class YoutubeProvider(Provider):
         while response:
             for item in response['items']:
                 info = item['snippet']
-                title = info['title']
+                title = normalize_title(info['title'])
 
                 match = RE1.match(title)
                 if not match:
