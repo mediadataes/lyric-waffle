@@ -157,7 +157,8 @@ class Identify:
             errors += p_errors
 
         output_dir = 'output'
-        filename = os.path.join(output_dir, 'songs.csv')
+        filename = datetime.now().strftime('songs-%Y-%m-%d.csv')
+        filename = os.path.join(output_dir, filename)
         os.makedirs(output_dir, exist_ok=True)
         with open(filename, 'w') as f:
             f.write('"title";"artists";"created";"length";"gender";"provider"\n')
