@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import itertools
 import os
 import re
 import sys
@@ -111,7 +112,7 @@ class Lyrics:
         songs = []
         with open(self.path, newline='') as csvfile:
             songsreader = csv.reader(csvfile, delimiter=';', quotechar='"')
-            for row in songsreader:
+            for row in itertools.islice(songsreader, 1, None):
                 song = Song.from_csv(row)
                 songs.append(song)
 
@@ -122,6 +123,7 @@ class Lyrics:
         filename = os.path.join(self.output, 'lyrics-errors.txt')
         os.makedirs(self.output, exist_ok=True)
         with open(filename, 'w') as f:
+            f.write('"stanza";"verse";"text"\n')
             written = set()
             for s in errors:
                 if s.title in written:
