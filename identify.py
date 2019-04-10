@@ -23,18 +23,20 @@ class Song:
     gender: Optional[str] = None
     length: Optional[int] = None
     created: Optional[datetime] = None
+    provider: Optional[str] = None
 
     def to_csv(self):
         title = self.title
         created = self.created or ""
         length = self.length or ""
         gender = self.gender or ""
+        provider = self.provider or ""
         artists = ', '.join(self.artists)
-        return f'"{title}";"{artists}";"{created}";"{length}";"{gender}"\n'
+        return f'"{title}";"{artists}";"{created}";"{length}";"{gender}";"{provider}"\n'
 
     @classmethod
     def from_csv(cls, row):
-        title, artists, created, length, gender = row
+        title, artists, created, length, gender, provider = row
         artists = artists.split(', ')
         created = datetime.fromisoformat(created)
 
@@ -42,6 +44,7 @@ class Song:
                  artists=artists,
                  gender=gender,
                  length=length,
+                 provider=provider,
                  created=created)
         return s
 
@@ -101,7 +104,8 @@ class YoutubeProvider(Provider):
                 artists = [a.strip() for a, _ in re.findall(RE_ARTIST, artists, flags=re.UNICODE)]
                 title = title.strip()
 
-                s = Song(artists=artists, title=title, created=datetime.now())
+                provider = f'youtube/{self.playlist}'
+                s = Song(provider=provider, artists=artists, title=title, created=datetime.now())
                 songs.append(s)
             req = plist.list_next(req, response)
             if not req:
@@ -126,7 +130,8 @@ class MusicListProvider(Provider):
             title = li.find('.chart-content h4', first=True).text
             artists = li.find('.chart-content p', first=True).text
             artists = [a.strip() for a, _ in re.findall(RE_ARTIST, artists, flags=re.UNICODE)]
-            s = Song(artists=artists, title=title, created=datetime.now())
+            provider = f'musiclist/{self.list_}'
+            s = Song(provider=provider, artists=artists, title=title, created=datetime.now())
             songs.append(s)
 
         return songs, []
@@ -155,6 +160,7 @@ class Identify:
         filename = os.path.join(output_dir, 'songs.csv')
         os.makedirs(output_dir, exist_ok=True)
         with open(filename, 'w') as f:
+            f.write('"title";"artists";"created";"length";"gender";"provider"\n')
             written = {}
             for s in songs:
                 if s.title in written:
