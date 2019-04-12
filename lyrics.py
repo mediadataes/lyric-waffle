@@ -10,7 +10,7 @@ import datetime
 
 from difflib import SequenceMatcher
 from functools import partial
-from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool as Pool
 
 from identify import Song
 from lyricsmaster.providers import Genius, AzLyrics, LyricWiki
