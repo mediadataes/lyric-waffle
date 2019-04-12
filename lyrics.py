@@ -36,6 +36,7 @@ def save_song(output, song, lyric):
     with open(path, 'w') as f:
         stanza = 1
         verse = 1
+        f.write('"stanza";"verse";"text"\n')
         for line in map(str.strip, lines.splitlines()):
             if not line:
                 if verse > 1:
@@ -123,7 +124,6 @@ class Lyrics:
         filename = os.path.join(self.output, 'lyrics-errors.txt')
         os.makedirs(self.output, exist_ok=True)
         with open(filename, 'w') as f:
-            f.write('"stanza";"verse";"text"\n')
             written = set()
             for s in errors:
                 if s.title in written:
