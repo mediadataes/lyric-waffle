@@ -24,6 +24,7 @@ class Song:
     length: Optional[int] = None
     created: Optional[datetime] = None
     provider: Optional[str] = None
+    youtube_id: Optional[str] = None
 
     def to_csv(self):
         title = self.title
@@ -32,11 +33,12 @@ class Song:
         gender = self.gender or ""
         provider = self.provider or ""
         artists = ', '.join(self.artists)
-        return f'"{title}";"{artists}";"{created}";"{length}";"{gender}";"{provider}"\n'
+        youtube_id = self.youtube_id or ""
+        return f'"{title}";"{artists}";"{created}";"{length}";"{gender}";"{provider}";"{youtube_id}"\n'
 
     @classmethod
     def from_csv(cls, row):
-        title, artists, created, length, gender, provider = row
+        title, artists, created, length, gender, provider, youtube_id = row
         artists = artists.split(', ')
         created = datetime.fromisoformat(created)
 
@@ -45,8 +47,36 @@ class Song:
                  gender=gender,
                  length=length,
                  provider=provider,
+                 youtube_id=youtube_id,
                  created=created)
         return s
+
+    def get_youtube_id(self):
+        if self.youtube_id:
+            return self.youtube_id
+
+        YOUTUBE_API_SERVICE_NAME = 'youtube'
+        YOUTUBE_API_VERSION = 'v3'
+
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION,
+                        developerKey=YOUTUBE_APIKEY)
+
+        artists = ', '.join(self.artists)
+        keyword = f'{self.title}, {artists}'
+        response = youtube.search().list(
+            q=keyword,
+            part="id,snippet",
+            maxResults=1,
+        ).execute()
+
+        items = response.get('items', [])
+        if not items:
+            return None
+
+        video_id = items[0]['id']['videoId']
+        self.youtube_id = video_id
+
+        return video_id
 
 
 class Provider:
@@ -89,6 +119,7 @@ class YoutubeProvider(Provider):
             for item in response['items']:
                 info = item['snippet']
                 title = normalize_title(info['title'])
+                video_id = info['resourceId']['videoId']
 
                 match = RE1.match(title)
                 if not match:
@@ -105,7 +136,7 @@ class YoutubeProvider(Provider):
                 title = title.strip()
 
                 provider = f'youtube/{self.playlist}'
-                s = Song(provider=provider, artists=artists, title=title, created=datetime.now())
+                s = Song(provider=provider, artists=artists, title=title, created=datetime.now(), youtube_id=video_id)
                 songs.append(s)
             req = plist.list_next(req, response)
             if not req:
@@ -132,6 +163,7 @@ class MusicListProvider(Provider):
             artists = [a.strip() for a, _ in re.findall(RE_ARTIST, artists, flags=re.UNICODE)]
             provider = f'musiclist/{self.list_}'
             s = Song(provider=provider, artists=artists, title=title, created=datetime.now())
+            s.get_youtube_id()
             songs.append(s)
 
         return songs, []
@@ -161,7 +193,7 @@ class Identify:
         filename = os.path.join(output_dir, filename)
         os.makedirs(output_dir, exist_ok=True)
         with open(filename, 'w') as f:
-            f.write('"title";"artists";"created";"length";"gender";"provider"\n')
+            f.write('"title";"artists";"created";"length";"gender";"provider";"youtube_id"\n')
             written = {}
             for s in songs:
                 if s.title in written:
