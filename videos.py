@@ -50,7 +50,7 @@ class Video:
         os.makedirs(self.output, exist_ok=True)
         filename = os.path.join(orig_path, self.output, 'video-errors.txt')
         archive = os.path.join(orig_path, self.output, 'video-archive.txt')
-        
+
         videos = os.path.join(self.output, 'videos')
         os.makedirs(videos, exist_ok=True)
 
