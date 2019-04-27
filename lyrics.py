@@ -62,6 +62,22 @@ def get_albums(artist, provider='genius'):
     return disc
 
 
+def fallback(output, song, provider):
+    # fallback to other provider
+    if provider == PROVIDERS[0]:
+        index = PROVIDERS.index(provider)
+        if len(PROVIDERS) <= index + 1:
+            artists = ', '.join(song.artists)
+            print(f'Cannot find the song: "{song.title}" from {artists}',
+                  file=sys.stderr)
+            return song
+
+        fallback_pr = PROVIDERS[index+1]
+        print(f'Fallback {fallback}')
+        return get_lyrics(output, song, provider=fallback_pr)
+
+
+
 def get_lyrics(output, song, provider=PROVIDERS[0]):
     print(f'{provider}: get lyrics: {song.title}')
     title = song.title.lower()
@@ -69,7 +85,13 @@ def get_lyrics(output, song, provider=PROVIDERS[0]):
     discs = []
     for artist in song.artists:
         print(f'Looking for the artist discography {artist}')
-        disc = get_albums(artist, provider)
+        try:
+            disc = get_albums(artist, provider)
+        except Exception as e:
+            print(f'Warning: {e}')
+            print(f'Error getting lyrics from {provider}, trying other provider')
+            return fallback(output, song, provider)
+
         if disc:
             discs.append(disc)
 
@@ -84,20 +106,7 @@ def get_lyrics(output, song, provider=PROVIDERS[0]):
                     save_song(output, song, s)
                     return
 
-    # fallback to other provider
-    if provider == PROVIDERS[0]:
-        index = PROVIDERS.index(provider)
-        if len(PROVIDERS) <= index + 1:
-            return song
-        fallback = PROVIDERS[index+1]
-        print(f'Fallback {fallback}')
-        return get_lyrics(output, song, provider=fallback)
-
-    artists = ', '.join(song.artists)
-    print(f'Cannot find the song: "{song.title}" from {artists}',
-          file=sys.stderr)
-
-    return song
+    return fallback(output, song, provider)
 
 
 class Lyrics:
