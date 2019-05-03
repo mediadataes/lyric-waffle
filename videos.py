@@ -65,13 +65,12 @@ class Video:
 
         os.chdir(videos)
         with youtube_dl.YoutubeDL(opts) as ydl:
-            url = 'https://www.youtube.com/watch?v={}'
-            ids = [url.format(song.youtube_id) for song in songs]
-            try:
-                ydl.download(ids)
-            except Exception as e:
-                print(f'Error: {e}')
-                print(f'Error downloading video with ID: {song.youtube_id}')
+            for song in songs:
+                try:
+                    ydl.download([song.youtube_id])
+                except Exception as e:
+                    print(f'Error: {e}')
+                    print(f'Error downloading video with ID: {song.youtube_id}')
         os.chdir(orig_path)
 
         print()
