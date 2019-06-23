@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker run --env-file .env --rm -ti -v $PWD/output:/app/output lyric-waffle python identify.py
+docker run --env-file .env --rm -ti -v $PWD/output:/app/output mediadataes/lyric-waffle python identify.py

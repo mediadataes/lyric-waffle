@@ -7,7 +7,7 @@ Download popular lyrics from different resources
 To build the docker image run:
 
 ```
-$ docker build -t lyric-waffle .
+$ docker build -t mediadataes/lyric-waffle .
 ```
 
 You should need to set the configuration in an environment file called ".env",
@@ -20,19 +20,19 @@ YOUTUBE_APIKEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ### Run test
 
 ```
-$ docker run --env-file .env --rm -ti lyric-waffle python test.py
+$ docker run --env-file .env --rm -ti mediadataes/lyric-waffle python test.py
 ```
 
 ### Song identify
 
 ```
-$ docker run --env-file .env --rm -ti -v $PWD/output:/app/output lyric-waffle python identify.py
+$ docker run --env-file .env --rm -ti -v $PWD/output:/app/output mediadataes/lyric-waffle python identify.py
 ```
 
 ### Lyrics download
 
 ```
-$ docker run --rm -ti -v $PWD/output:/app/output lyric-waffle python lyrics.py
+$ docker run --rm -ti -v $PWD/output:/app/output mediadataes/lyric-waffle python lyrics.py
 ```
 
 This command will download all songs lyrics in the songs.csv file to the output/songs folder
@@ -40,7 +40,7 @@ This command will download all songs lyrics in the songs.csv file to the output/
 ### Youtube video download
 
 ```
-$ docker run --rm -ti -v $PWD/output:/app/output lyric-waffle python videos.py
+$ docker run --rm -ti -v $PWD/output:/app/output mediadataes/lyric-waffle python videos.py
 ```
 
 This command will download all videos in the songs.csv file to the output/videos folder
@@ -48,7 +48,7 @@ This command will download all videos in the songs.csv file to the output/videos
 ### video split
 
 ```
-$ docker run --rm -ti -v $PWD/output:/app/output lyric-waffle python split.py [video]
+$ docker run --rm -ti -v $PWD/output:/app/output mediadataes/lyric-waffle python split.py [video]
 ```
 
 This is the command help:
